@@ -25,6 +25,7 @@
 #include <cstddef>
 
 typedef enum {
+    MODEM_PROMPT = 1,
     MODEM_BUSY = -4,
     MODEM_NO_MATCH = -3,
     MODEM_ERROR = -2,
@@ -70,12 +71,14 @@ public:
     void rawWrite(const char* content);
     void dataWrite(const uint8_t* content, uint32_t length);
     void dataWrite(uint8_t b);
+    void dataWrite(const char *content);
     void rawRead(int length, void* buffer);
     virtual uint32_t msTick()=0;
 
     static uint8_t convertHex(char hex);
     static uint8_t convertHex(const char* hex);
 
+    bool awaitPrompt(uint32_t timeout = 20000);
 protected:
     #define URC_BUFFER_SIZE 256
     typedef enum {
@@ -114,8 +117,8 @@ protected:
     bool findlineURC(char *buffer);
 
     URCReceiver *receiver;
-    char cmdbuffer[32];
-    char valbuffer[48];
+    char cmdbuffer[64];
+    char valbuffer[128];
     char respbuffer[512];
     char okbuffer[512];
     char *valoffset;

@@ -85,7 +85,7 @@ public:
     String getICCID();
     String getIMEI();
     String getNetworkOperator();
-    bool getLocation(int accuracy=10, int maxseconds=360);
+    bool getLocation(int accuracy = 10, int maxseconds = 360);
 
     int getChargeState();
 
@@ -93,27 +93,39 @@ public:
 
     bool setRGB(String name);
     bool setRGB(int hexcode);
-    bool offRGB() {return setRGB("BLACK");}
+    bool offRGB() { return setRGB("BLACK"); }
     bool setLED(bool on);
 
-    bool sendMessage(const char* content);
-    bool sendMessage(const char* content, const char* topic);
-    bool sendMessage(const uint8_t* content, uint32_t length);
-    bool sendMessage(const uint8_t* content, uint32_t length, const char* topic);
+    bool sendMessage(const char *content);
+    bool sendMessage(const char *content, const char *topic);
+    bool sendMessage(const uint8_t *content, uint32_t length);
+    bool sendMessage(const uint8_t *content, uint32_t length, const char *topic);
     bool sendMessage(const String &content);
     bool sendMessage(const String &content, const String &topic);
-    bool sendMessage(const String &content, const char* topic);
-    bool sendMessage(const char* content, const String &topic);
-    bool sendMessage(const uint8_t* content, uint32_t length, const String &topic);
+    bool sendMessage(const String &content, const char *topic);
+    bool sendMessage(const char *content, const String &topic);
+    bool sendMessage(const uint8_t *content, uint32_t length, const String &topic);
+
+    void writeToStream(const char byte);
+    void writeToStream(const char * bytes);
+    void endStream();
+    bool prepareSendFile(int size);
+    bool sendHttpPost(const char *base, const char *path, const char *header);
+    bool deleteFile(const char *filename);
+    bool fileExists(const char *filename);
+    bool writeTempFile(const char *filename, const char *buffer, const size_t size);
+    bool checkFileSize();
+    char readFromModem();
+    void setVerboseErrors();
 
     int sendTimeout();
     int sendDelay(bool ok, int milliseconds);
 
-    //deprecated
-    #define attachTag attachTopic
+//deprecated
+#define attachTag attachTopic
 
-    bool attachTopic(const char* topic);
-    bool attachTopic(const String &topic) {return attachTopic(topic.c_str());}
+    bool attachTopic(const char *topic);
+    bool attachTopic(const String &topic) { return attachTopic(topic.c_str()); }
     size_t write(uint8_t x);
     bool sendMessage();
 
@@ -126,15 +138,16 @@ public:
     void attachHandlerNotify(void (*event_handler)(cloud_event e));
     void attachHandlerLocation(void (*location_handler)(const rtc_datetime_t &timestamp, const String &lat, const String &lon, int altitude, int uncertainty));
     void attachHandlerCharge(void (*charge_handler)(charge_status status));
-    void onURC(const char* urc);
+    void onURC(const char *urc);
 
 protected:
-    typedef enum {
+    typedef enum
+    {
         MODEM_STATE_UNKNOWN,
         MODEM_STATE_SHUTDOWN,
         MODEM_STATE_DISCONNECTED,
         MODEM_STATE_READY,
-    }state_modem;
+    } state_modem;
 
     bool getTime(rtc_datetime_t &dt, bool utc);
 
@@ -142,7 +155,7 @@ protected:
     void resetBuffer();
     void checkIncoming();
     void notifySMS();
-    int read(int socket, void *buffer, int max_len, int timeout=10000);
+    int read(int socket, void *buffer, int max_len, int timeout = 10000);
     void close(int socket);
 
     char sms_sender[21];
@@ -161,7 +174,7 @@ protected:
     int inbound_length;
     uint8_t message_buffer[MAX_MESSAGE_SIZE];
     uint32_t message_length;
-    char topics[MAX_TOPICS][MAX_TOPIC_SIZE+1];
+    char topics[MAX_TOPICS][MAX_TOPIC_SIZE + 1];
     uint32_t num_topics;
     bool ready;
     state_modem modem_state;
