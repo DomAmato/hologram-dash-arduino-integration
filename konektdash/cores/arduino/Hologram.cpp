@@ -27,7 +27,6 @@
 #include "WInterrupts.h"
 #include "Dash.h"
 
-void Hologram::attachHandlerSMS(void (*sms_handler)(const String &sender, const rtc_datetime_t &timestamp, const String &message)) {
 void Hologram::attachHandlerSMS(void (*sms_handler)(const String &sender, const rtc_datetime_t &timestamp, const String &message))
 {
     sms_callback = sms_handler;
@@ -916,13 +915,11 @@ const char *Hologram::readFileContents(const char *filename)
 void Hologram::writeToStream(const char byte)
 {
     modem.dataWrite(byte);
-    // modem.rawWrite(byte);
 }
 
 void Hologram::writeToStream(const char *bytes)
 {
     modem.dataWrite(bytes);
-    // modem.rawWrite(bytes);
 }
 
 void Hologram::endStream()
@@ -932,14 +929,9 @@ void Hologram::endStream()
 
 char Hologram::readFromModem()
 {
-    // char buf[1];
-    // modem.rawRead(1, buf);
-    // return buf[0];
-    if (modem.modemavailable())
-    {
-        return modem.modemread();
-    }
-    return NULL;
+    char buf[1];
+    modem.rawRead(1, buf);
+    return buf[0];
 }
 
 void Hologram::setVerboseErrors()
