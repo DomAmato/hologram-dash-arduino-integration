@@ -404,7 +404,6 @@ bool Modem::awaitPrompt(uint32_t timeout)
     if (async_state == MODEM_BUSY) return false;
     respbuffer[0] = 0;
     //Clear all the incoming buffer
-    debugout("Purging Buffer\r\n");
     while (modemavailable())
     {
         debugout(modemread());
@@ -412,7 +411,6 @@ bool Modem::awaitPrompt(uint32_t timeout)
     modemwrite(cmdbuffer, CMD_STARTAT);
     modemwrite("=");
     modemwrite(valbuffer, CMD_END);
-    debugout("Awaiting Prompt\r\n");
     uint32_t startMillis = msTick();
     while (msTick() - startMillis < timeout)
     {

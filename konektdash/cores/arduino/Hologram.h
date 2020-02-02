@@ -58,7 +58,8 @@ typedef enum {
     CHARGE_STATUS_NO_INPUT      = 7,
 }charge_status;
 
-class Hologram : public Print, public URCReceiver {
+class Hologram : public Print, public URCReceiver
+{
 public:
     void begin();
     void end();
@@ -109,12 +110,18 @@ public:
     void writeToStream(const char byte);
     void writeToStream(const char * bytes);
     void endStream();
-    bool prepareSendFile(int size);
-    bool sendHttpPost(const char *base, const char *path, const char *header);
+    bool prepareSendFile(int size, const char *filename = "request.ffs");
+    bool resetHttpProfile(int profile);
+    bool setHttpParam(int profile, int type, const char * data);
+    bool setHttpParam(int profile, int type, int data);
+    bool sendHttpRequest(int profile, int type, const char *path, const char * response = "\"response.ffs\"", const char * request = "\"request.ffs\"", int content_type = 0, const char * custom_content_type = NULL);
     bool deleteFile(const char *filename);
     bool fileExists(const char *filename);
-    bool writeTempFile(const char *filename, const char *buffer, const size_t size);
-    bool checkFileSize();
+    bool writeFile(const char *filename, const char *buffer, const size_t size);
+    bool checkFilesystemSize();
+    const char * listFiles();
+    const char * checkFileSize(const char *filename);
+    const char * readFileContents(const char *filename);
     char readFromModem();
     void setVerboseErrors();
 

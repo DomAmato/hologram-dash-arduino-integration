@@ -28,6 +28,8 @@
 #include "Dash.h"
 
 void Hologram::attachHandlerSMS(void (*sms_handler)(const String &sender, const rtc_datetime_t &timestamp, const String &message)) {
+void Hologram::attachHandlerSMS(void (*sms_handler)(const String &sender, const rtc_datetime_t &timestamp, const String &message))
+{
     sms_callback = sms_handler;
     pollEvents();
 }
@@ -762,62 +764,93 @@ bool Hologram::sendMessage(const uint8_t *content, uint32_t length, const char *
     return sendMessage(content, length);
 }
 
-bool Hologram::prepareSendFile(int size)
+bool Hologram::prepareSendFile(int size, const char *filename)
 {
-    if (!checkFileSize())
+    if (!checkFilesystemSize())
     {
         return false;
     }
-    if (fileExists("img.ffs"))
+    if (fileExists(filename))
     {
-        if (!deleteFile("img.ffs"))
+        if (!deleteFile(filename))
         {
             return false;
         }
     }
 
     modem.startSet("+UDWNFILE");
-    modem.appendSet("\"img.ffs\",");
+    modem.appendSet(filename);
+    modem.appendSet(",");
     modem.appendSet(size);
-
     return modem.awaitPrompt();
 }
 
-bool Hologram::sendHttpPost(const char *base, const char *path, const char *header)
+bool Hologram::resetHttpProfile(int profile)
 {
-    if (modem_state == MODEM_STATE_DISCONNECTED)
-        return false;
-    if (!fileExists("img.ffs"))
-        return false;
-    powerUp();
     modem.startSet("+UHTTP");
-    modem.appendSet("0,1,\"");
-    modem.appendSet(base);
-    modem.appendSet("\"");
-    if (modem.completeSet() != MODEM_OK)
-    {
-        return false;
-    }
-    if (header)
-    {
-        modem.startSet("+UHTTP");
-        modem.appendSet("0,9,\"");
-        modem.appendSet(header);
-        modem.appendSet("\"");
-        if (modem.completeSet() != MODEM_OK)
-        {
-            return false;
-        }
-    }
-
-    modem.startSet("+UHTTPC");
-    modem.appendSet("0,4,\"");
-    modem.appendSet(path);
-    modem.appendSet("\",\"\",\"img.ffs\",6,\"multipart/form-data;boundary=ZZYZZX\"");
+    modem.appendSet(profile);
     return modem.completeSet() == MODEM_OK;
 }
 
-bool Hologram::writeTempFile(const char *filename, const char *buffer, const size_t size)
+bool Hologram::setHttpParam(int profile, int type, int data)
+{
+    modem.startSet("+UHTTP");
+    modem.appendSet(profile);
+    modem.appendSet(",");
+    modem.appendSet(type);
+    modem.appendSet(",");
+    modem.appendSet(data);
+    return modem.completeSet() == MODEM_OK;
+}
+
+bool Hologram::setHttpParam(int profile, int type, const char *data)
+{
+    modem.startSet("+UHTTP");
+    modem.appendSet(profile);
+    modem.appendSet(",");
+    modem.appendSet(type);
+    modem.appendSet(",");
+    modem.appendSet(data);
+    return modem.completeSet() == MODEM_OK;
+}
+
+bool Hologram::sendHttpRequest(int profile, int type, const char *path, const char *response, const char *request, int content_type, const char *custom_content_type)
+{
+    if (modem_state == MODEM_STATE_DISCONNECTED)
+    {
+        return false;
+    }
+
+    powerUp();
+    modem.startSet("+UHTTPC");
+    modem.appendSet(profile);
+    modem.appendSet(",");
+    modem.appendSet(type);
+    modem.appendSet(",");
+    modem.appendSet(path);
+    modem.appendSet(",");
+    modem.appendSet(response);
+    if (type >= 3 && type <= 5)
+    {
+        modem.appendSet(",");
+        modem.appendSet(request);
+        if (type >= 4 && type <= 5)
+        {
+            modem.appendSet(",");
+            modem.appendSet(content_type);
+            if (custom_content_type)
+            {
+                modem.appendSet(",");
+                modem.appendSet(custom_content_type);
+            }
+        }
+    }
+    bool success = modem.completeSet(60000) == MODEM_OK;
+    modem.checkURC();
+    return success;
+}
+
+bool Hologram::writeFile(const char *filename, const char *buffer, const size_t size)
 {
     modem.startSet("+UDWNFILE");
     modem.appendSet("\"");
@@ -836,48 +869,77 @@ bool Hologram::writeTempFile(const char *filename, const char *buffer, const siz
 bool Hologram::fileExists(const char *filename)
 {
     modem.startSet("+ULSTFILE");
-    modem.appendSet("2,\"");
+    modem.appendSet("2,");
     modem.appendSet(filename);
-    modem.appendSet("\"");
     return modem.completeSet("+ULSTFILE: 0") == MODEM_NO_MATCH;
 }
 
 bool Hologram::deleteFile(const char *filename)
 {
     modem.startSet("+UDELFILE");
-    modem.appendSet("\"");
     modem.appendSet(filename);
-    modem.appendSet("\"");
     return modem.completeSet() == MODEM_OK;
 }
 
-bool Hologram::checkFileSize()
+bool Hologram::checkFilesystemSize()
 {
     modem.startSet("+ULSTFILE");
     modem.appendSet("1");
     return modem.completeSet("0") == MODEM_NO_MATCH;
 }
 
+const char *Hologram::checkFileSize(const char *filename)
+{
+    modem.startSet("+ULSTFILE");
+    modem.appendSet("2,");
+    modem.appendSet(filename);
+    modem.completeSet();
+    return modem.lastResponse();
+}
+
+const char *Hologram::listFiles()
+{
+    modem.startSet("+ULSTFILE");
+    modem.appendSet(0);
+    modem.completeSet();
+    return modem.lastResponse();
+}
+
+const char *Hologram::readFileContents(const char *filename)
+{
+    modem.startSet("+URDFILE");
+    modem.appendSet(filename);
+    modem.completeSet(60000);
+    return modem.lastResponse();
+}
+
 void Hologram::writeToStream(const char byte)
 {
-    modem.rawWrite(byte);
+    modem.dataWrite(byte);
+    // modem.rawWrite(byte);
 }
 
 void Hologram::writeToStream(const char *bytes)
 {
     modem.dataWrite(bytes);
+    // modem.rawWrite(bytes);
 }
 
 void Hologram::endStream()
 {
-    modem.rawWrite("\r\n");
+    modem.dataWrite("\r\n");
 }
 
 char Hologram::readFromModem()
 {
-    char buf[1];
-    modem.rawRead(1, buf);
-    return buf[0];
+    // char buf[1];
+    // modem.rawRead(1, buf);
+    // return buf[0];
+    if (modem.modemavailable())
+    {
+        return modem.modemread();
+    }
+    return NULL;
 }
 
 void Hologram::setVerboseErrors()
